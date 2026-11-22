@@ -107,9 +107,44 @@
     ctx.fillStyle = '#eef1ee';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     applyTransform();
+    drawBackgroundGrid();
     drawGarden();
     drawObjects();
     drawPreview();
+  }
+
+  function drawBackgroundGrid() {
+    const s = viewScale();
+    const left = -state.view.ox / s;
+    const top = -state.view.oy / s;
+    const right = (cssW - state.view.ox) / s;
+    const bottom = (cssH - state.view.oy) / s;
+    const minor = 10;
+    const major = 50;
+    const hairline = 1 / (dpr * s);
+    ctx.lineWidth = hairline;
+    ctx.beginPath();
+    for (let x = Math.ceil(left / minor) * minor; x <= right; x += minor) {
+      ctx.moveTo(x, top);
+      ctx.lineTo(x, bottom);
+    }
+    for (let y = Math.ceil(top / minor) * minor; y <= bottom; y += minor) {
+      ctx.moveTo(left, y);
+      ctx.lineTo(right, y);
+    }
+    ctx.strokeStyle = 'rgba(0,0,0,0.06)';
+    ctx.stroke();
+    ctx.beginPath();
+    for (let x = Math.ceil(left / major) * major; x <= right; x += major) {
+      ctx.moveTo(x, top);
+      ctx.lineTo(x, bottom);
+    }
+    for (let y = Math.ceil(top / major) * major; y <= bottom; y += major) {
+      ctx.moveTo(left, y);
+      ctx.lineTo(right, y);
+    }
+    ctx.strokeStyle = 'rgba(0,0,0,0.11)';
+    ctx.stroke();
   }
 
   function pathPolygon(close) {
@@ -153,14 +188,27 @@
       ctx.setLineDash([]);
       if (state.gardenCursor && state.polygon.length > 0) {
         const last = state.polygon[state.polygon.length - 1];
+        const cur = state.gardenCursor;
         ctx.beginPath();
         ctx.moveTo(last.x, last.y);
-        ctx.lineTo(state.gardenCursor.x, state.gardenCursor.y);
+        ctx.lineTo(cur.x, cur.y);
         ctx.strokeStyle = 'rgba(63,112,56,0.5)';
         ctx.lineWidth = 0.25;
         ctx.setLineDash([0.8, 0.8]);
         ctx.stroke();
         ctx.setLineDash([]);
+        const len = Math.hypot(cur.x - last.x, cur.y - last.y);
+        const label = GardenCore.formatLength(len);
+        const mx = (last.x + cur.x) / 2;
+        const my = (last.y + cur.y) / 2;
+        ctx.font = '2.6px system-ui, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.lineWidth = 0.6;
+        ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+        ctx.strokeText(label, mx, my - 0.8);
+        ctx.fillStyle = '#2f5c2a';
+        ctx.fillText(label, mx, my - 0.8);
       }
       ctx.fillStyle = '#2f5c2a';
       for (const p of state.polygon) {

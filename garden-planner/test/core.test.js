@@ -47,6 +47,11 @@ assert.strictEqual(G.clamp(5, 0, 3), 3);
 assert.strictEqual(G.clamp(-1, 0, 3), 0);
 assert.strictEqual(G.clamp(2, 0, 3), 2);
 
+assert.strictEqual(G.formatLength(12.34), '12.3 cm', 'sub-100cm keeps one decimal');
+assert.strictEqual(G.formatLength(126.7), '127 cm', '100cm and up rounds to whole cm');
+assert.strictEqual(G.formatLength(0), '0 cm');
+assert.strictEqual(G.formatLength(NaN), '');
+
 const bounds = G.polygonBounds([{ x: -3, y: 7 }, { x: 4, y: -2 }]);
 assert.deepStrictEqual(bounds, { minX: -3, minY: -2, maxX: 4, maxY: 7 });
 

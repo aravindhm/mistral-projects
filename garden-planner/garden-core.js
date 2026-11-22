@@ -129,6 +129,12 @@
     return null;
   }
 
+  function formatLength(cm) {
+    if (!isFinite(cm)) return '';
+    const rounded = cm < 100 ? Math.round(cm * 10) / 10 : Math.round(cm);
+    return rounded + ' cm';
+  }
+
   function rectFromDrag(x1, y1, x2, y2, opts) {
     const square = !!(opts && opts.square);
     const dx = x2 - x1;
@@ -164,5 +170,6 @@
     objectContains: objectContains,
     hitTest: hitTest,
     rectFromDrag: rectFromDrag,
+    formatLength: formatLength,
   };
 });
