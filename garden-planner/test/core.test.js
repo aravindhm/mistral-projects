@@ -52,9 +52,10 @@ assert.strictEqual(G.formatLength(126.7), '127 cm', '100cm and up rounds to whol
 assert.strictEqual(G.formatLength(0), '0 cm');
 assert.strictEqual(G.formatLength(NaN), '');
 
-assert.deepStrictEqual(G.snapToGrid({ x: 12.3, y: -7.8 }, 10), { x: 10, y: -10 }, 'snaps to nearest 10cm grid point');
-assert.deepStrictEqual(G.snapToGrid({ x: 15, y: 25 }, 10), { x: 20, y: 30 }, 'rounds half up');
-assert.deepStrictEqual(G.snapToGrid({ x: 3, y: 4 }, 0), { x: 3, y: 4 }, 'zero grid leaves point unchanged');
+assert.deepStrictEqual(G.snapToAxis({ x: 10, y: 10 }, { x: 50.75, y: 10.75 }), { x: 50.75, y: 10 }, 'dominant dx snaps to horizontal axis');
+assert.deepStrictEqual(G.snapToAxis({ x: 10, y: 10 }, { x: 12, y: 30 }), { x: 10, y: 30 }, 'dominant dy snaps to vertical axis');
+assert.deepStrictEqual(G.snapToAxis({ x: 0, y: 0 }, { x: 5, y: 5 }), { x: 5, y: 0 }, 'tie snaps horizontal');
+assert.deepStrictEqual(G.snapToAxis({ x: -3, y: 4 }, { x: -8, y: 2 }), { x: -8, y: 4 }, 'negative coords keep the axis value');
 
 const bounds = G.polygonBounds([{ x: -3, y: 7 }, { x: 4, y: -2 }]);
 assert.deepStrictEqual(bounds, { minX: -3, minY: -2, maxX: 4, maxY: 7 });

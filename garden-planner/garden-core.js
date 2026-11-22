@@ -129,9 +129,11 @@
     return null;
   }
 
-  function snapToGrid(point, grid) {
-    if (!(grid > 0)) return { x: point.x, y: point.y };
-    return { x: Math.round(point.x / grid) * grid, y: Math.round(point.y / grid) * grid };
+  function snapToAxis(from, to) {
+    const dx = Math.abs(to.x - from.x);
+    const dy = Math.abs(to.y - from.y);
+    if (dx >= dy) return { x: to.x, y: from.y };
+    return { x: from.x, y: to.y };
   }
 
   function formatLength(cm) {
@@ -176,6 +178,6 @@
     hitTest: hitTest,
     rectFromDrag: rectFromDrag,
     formatLength: formatLength,
-    snapToGrid: snapToGrid,
+    snapToAxis: snapToAxis,
   };
 });

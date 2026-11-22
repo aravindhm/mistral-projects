@@ -332,6 +332,11 @@
     ctx.setLineDash([]);
   }
 
+  function snapForGarden(w, shift) {
+    if (!shift || state.polygon.length === 0) return w;
+    return GardenCore.snapToAxis(state.polygon[state.polygon.length - 1], w);
+  }
+
   function gardenClick(w) {
     if (!state.drawingGarden) {
       pushUndo();
@@ -490,7 +495,7 @@
       return;
     }
     if (state.mode === 'garden') {
-      gardenClick(e.shiftKey ? GardenCore.snapToGrid(w, GRID_MINOR) : w);
+      gardenClick(snapForGarden(w, e.shiftKey));
       draw();
       return;
     }
@@ -524,8 +529,8 @@
 
   canvas.addEventListener('pointermove', function (e) {
     let w = eventWorld(e);
-    state.snapPreview = state.mode === 'garden' && !!e.shiftKey;
-    if (state.snapPreview) w = GardenCore.snapToGrid(w, GRID_MINOR);
+    state.snapPreview = state.mode === 'garden' && !!e.shiftKey && state.polygon.length > 0;
+    if (state.snapPreview) w = GardenCore.snapToAxis(state.polygon[state.polygon.length - 1], w);
     state.gardenCursor = w;
     if (state.drag) {
       dragMove(w);
