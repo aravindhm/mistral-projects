@@ -2,6 +2,7 @@
   'use strict';
 
   const PX_PER_CM = 4;
+  const GRID_MINOR = 10;
   const TILE_COLORS = { grass: '#8fd06a', stone: '#c9c9c9' };
   const GARDEN_FILL = '#eaf6e6';
   const GARDEN_STROKE = '#3f7038';
@@ -33,6 +34,7 @@
     drawingGarden: false,
     prevPolygon: null,
     gardenCursor: null,
+    snapPreview: false,
     tileSize: 30,
     tiles: new Map(),
     objects: [],
@@ -119,8 +121,8 @@
     const top = -state.view.oy / s;
     const right = (cssW - state.view.ox) / s;
     const bottom = (cssH - state.view.oy) / s;
-    const minor = 10;
-    const major = 50;
+    const minor = GRID_MINOR;
+    const major = GRID_MINOR * 5;
     const hairline = 1 / (dpr * s);
     ctx.lineWidth = hairline;
     ctx.beginPath();
@@ -209,6 +211,19 @@
         ctx.strokeText(label, mx, my - 0.8);
         ctx.fillStyle = '#2f5c2a';
         ctx.fillText(label, mx, my - 0.8);
+      }
+      if (state.snapPreview && state.gardenCursor) {
+        const c = state.gardenCursor;
+        const arm = Math.max(1.2, 6 / viewScale());
+        ctx.beginPath();
+        ctx.moveTo(c.x - arm, c.y);
+        ctx.lineTo(c.x + arm, c.y);
+        ctx.moveTo(c.x, c.y - arm);
+        ctx.lineTo(c.x, c.y + arm);
+        ctx.strokeStyle = '#1a73e8';
+        ctx.lineWidth = 0.3;
+        ctx.setLineDash([]);
+        ctx.stroke();
       }
       ctx.fillStyle = '#2f5c2a';
       for (const p of state.polygon) {
@@ -474,7 +489,11 @@
       state.drag = { kind: 'pan', sx: w.sx, sy: w.sy, ox: state.view.ox, oy: state.view.oy };
       return;
     }
-    if (state.mode === 'garden') { gardenClick(w); draw(); return; }
+    if (state.mode === 'garden') {
+      gardenClick(e.shiftKey ? GardenCore.snapToGrid(w, GRID_MINOR) : w);
+      draw();
+      return;
+    }
     if (state.mode === 'paint') {
       if (!gardenDefined()) return;
       pushUndo();
@@ -504,7 +523,9 @@
   });
 
   canvas.addEventListener('pointermove', function (e) {
-    const w = eventWorld(e);
+    let w = eventWorld(e);
+    state.snapPreview = state.mode === 'garden' && !!e.shiftKey;
+    if (state.snapPreview) w = GardenCore.snapToGrid(w, GRID_MINOR);
     state.gardenCursor = w;
     if (state.drag) {
       dragMove(w);
@@ -567,6 +588,11 @@
       canvas.style.cursor = 'grab';
       return;
     }
+    if (e.key === 'Shift') {
+      state.snapPreview = state.mode === 'garden';
+      draw();
+      return;
+    }
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
       e.preventDefault();
       undo();
@@ -596,6 +622,10 @@
   window.addEventListener('keyup', function (e) {
     if (e.key === ' ') {
       state.spaceDown = false;
+      draw();
+    }
+    if (e.key === 'Shift' && state.snapPreview) {
+      state.snapPreview = false;
       draw();
     }
   });

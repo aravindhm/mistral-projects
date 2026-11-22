@@ -129,6 +129,11 @@
     return null;
   }
 
+  function snapToGrid(point, grid) {
+    if (!(grid > 0)) return { x: point.x, y: point.y };
+    return { x: Math.round(point.x / grid) * grid, y: Math.round(point.y / grid) * grid };
+  }
+
   function formatLength(cm) {
     if (!isFinite(cm)) return '';
     const rounded = cm < 100 ? Math.round(cm * 10) / 10 : Math.round(cm);
@@ -171,5 +176,6 @@
     hitTest: hitTest,
     rectFromDrag: rectFromDrag,
     formatLength: formatLength,
+    snapToGrid: snapToGrid,
   };
 });

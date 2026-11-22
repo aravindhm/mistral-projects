@@ -30,7 +30,9 @@ All coordinates on the canvas are **centimetres** (1 cm = 4 px at 100% zoom).
    segment from the last corner to the cursor is shown while you move the mouse.
    Double-click, right-click, or click the first corner to close the shape. `Esc`
    cancels a redraw. "Redraw polygon" starts over; "Clear garden" removes it.
-   A faint background grid (10 cm minor, 50 cm major) is drawn over the whole canvas.
+   Hold `Shift` while drawing to snap corners to the 10 cm grid (a blue crosshair
+   marks the snapped point). A faint background grid (10 cm minor, 50 cm major) is
+   drawn over the whole canvas.
 2. **Tile size** — set the tile side length in cm and press *Apply*. The garden is
    tiled with squares of that size; a tile belongs to the garden when its centre lies
    inside the polygon. Changing the tile size clears painted tiles.

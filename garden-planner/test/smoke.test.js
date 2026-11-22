@@ -90,15 +90,15 @@ function fire(el, type, ev) {
 function key(k, extra) {
   fire(global.window, 'keydown', Object.assign({ key: k, target: { tagName: 'BODY' }, preventDefault() {} }, extra));
 }
-function pointer(type, x, y) {
-  fire(byId.canvas, type, { clientX: x, clientY: y, button: 0, pointerId: 1, target: byId.canvas, preventDefault() {} });
+function pointer(type, x, y, extra) {
+  fire(byId.canvas, type, Object.assign({ clientX: x, clientY: y, button: 0, pointerId: 1, target: byId.canvas, preventDefault() {} }, extra));
 }
 
 (async function run() {
   fire(global.window, 'resize', {});
 
   key('g');
-  pointer('pointerdown', 100, 100); pointer('pointerup', 100, 100);
+  pointer('pointerdown', 101, 101, { shiftKey: true }); pointer('pointerup', 101, 101, { shiftKey: true });
   pointer('pointerdown', 260, 100); pointer('pointerup', 260, 100);
   pointer('pointerdown', 260, 220); pointer('pointerup', 260, 220);
   pointer('pointerdown', 100, 220); pointer('pointerup', 100, 220);
@@ -140,6 +140,7 @@ function pointer(type, x, y) {
   byId.btnSave.click();
   const saved = JSON.parse(store['garden-planner-v1']);
   assert.strictEqual(saved.polygon.length, 4, 'polygon saved with 4 corners');
+  assert.deepStrictEqual(saved.polygon[0], { x: 10, y: 10 }, 'shift-dragged first corner snapped to 10cm grid');
   assert.ok(saved.tiles.length > 0, 'painted tiles saved');
   assert.ok(saved.tiles.every(t => t[1] === 'grass' || t[1] === 'stone'), 'tile kinds valid');
   assert.strictEqual(saved.objects.length, 2, 'circle deleted, rect+square remain');

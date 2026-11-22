@@ -52,6 +52,10 @@ assert.strictEqual(G.formatLength(126.7), '127 cm', '100cm and up rounds to whol
 assert.strictEqual(G.formatLength(0), '0 cm');
 assert.strictEqual(G.formatLength(NaN), '');
 
+assert.deepStrictEqual(G.snapToGrid({ x: 12.3, y: -7.8 }, 10), { x: 10, y: -10 }, 'snaps to nearest 10cm grid point');
+assert.deepStrictEqual(G.snapToGrid({ x: 15, y: 25 }, 10), { x: 20, y: 30 }, 'rounds half up');
+assert.deepStrictEqual(G.snapToGrid({ x: 3, y: 4 }, 0), { x: 3, y: 4 }, 'zero grid leaves point unchanged');
+
 const bounds = G.polygonBounds([{ x: -3, y: 7 }, { x: 4, y: -2 }]);
 assert.deepStrictEqual(bounds, { minX: -3, minY: -2, maxX: 4, maxY: 7 });
 
