@@ -297,10 +297,10 @@
 
   function drawDimensions() {
     if (!state.showDimensions) return;
-    ctx.font = '2.2px system-ui, sans-serif';
+    ctx.font = '2.8px system-ui, sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.lineWidth = 0.55;
+    ctx.lineWidth = 0.7;
     const labelEdge = function (a, b) {
       const len = Math.hypot(b.x - a.x, b.y - a.y);
       if (len < 0.01) return;
@@ -338,7 +338,7 @@
           ctx.setLineDash([]);
           const text = '⌀ ' + GardenCore.formatLength(2 * o.r);
           ctx.strokeStyle = 'rgba(255,255,255,0.85)';
-          ctx.lineWidth = 0.55;
+          ctx.lineWidth = 0.7;
           ctx.strokeText(text, 0, -1.6);
           ctx.fillStyle = '#37474f';
           ctx.fillText(text, 0, -1.6);
