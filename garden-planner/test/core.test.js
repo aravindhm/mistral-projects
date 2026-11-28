@@ -57,6 +57,26 @@ assert.deepStrictEqual(G.snapToAxis({ x: 10, y: 10 }, { x: 12, y: 30 }), { x: 10
 assert.deepStrictEqual(G.snapToAxis({ x: 0, y: 0 }, { x: 5, y: 5 }), { x: 5, y: 0 }, 'tie snaps horizontal');
 assert.deepStrictEqual(G.snapToAxis({ x: -3, y: 4 }, { x: -8, y: 2 }), { x: -8, y: 4 }, 'negative coords keep the axis value');
 
+assert.strictEqual(G.makeObject('rect', {}).rotation, 0, 'objects default to 0 degrees rotation');
+
+const rot = G.makeObject('rect', { x: 0, y: 0, w: 20, h: 10, rotation: 90 });
+assert.strictEqual(G.objectContains(rot, { x: 10, y: 12 }), true, 'rotated rect hit accounts for rotation');
+assert.strictEqual(G.objectContains(G.makeObject('rect', { x: 0, y: 0, w: 20, h: 10, rotation: 0 }), { x: 10, y: 12 }), false, 'same point outside when unrotated');
+assert.deepStrictEqual(G.objectCenter(rot), { x: 10, y: 5 }, 'rect centre');
+assert.deepStrictEqual(G.objectCenter(G.makeObject('circle', { x: 3, y: 4, r: 5 })), { x: 3, y: 4 }, 'circle centre is its position');
+
+const rp = G.rotatePoint({ x: 1, y: 0 }, { x: 0, y: 0 }, 90);
+assert.ok(Math.abs(rp.x) < 1e-9 && Math.abs(rp.y - 1) < 1e-9, 'rotatePoint 90deg maps (1,0) to (0,1)');
+
+const bb = G.objectBounds(rot);
+assert.ok(Math.abs(bb.minX - 5) < 1e-9 && Math.abs(bb.maxX - 15) < 1e-9 && Math.abs(bb.minY + 5) < 1e-9 && Math.abs(bb.maxY - 15) < 1e-9, 'bounds of 90deg-rotated 20x10 rect');
+
+assert.strictEqual(G.normAngle(-15), 345, 'normAngle wraps negatives');
+assert.strictEqual(G.normAngle(370), 10, 'normAngle wraps over 360');
+assert.strictEqual(G.snapAngle(8, 15), 15, 'snapAngle rounds to nearest step');
+assert.strictEqual(G.snapAngle(7, 15), 0, 'snapAngle below half step');
+assert.strictEqual(G.snapAngle(-100, 15), 255, 'snapAngle normalizes');
+
 const bounds = G.polygonBounds([{ x: -3, y: 7 }, { x: 4, y: -2 }]);
 assert.deepStrictEqual(bounds, { minX: -3, minY: -2, maxX: 4, maxY: 7 });
 

@@ -42,7 +42,12 @@ All coordinates on the canvas are **centimetres** (1 cm = 4 px at 100% zoom).
 4. **Rect / Square / Circle tools (R / S / C)** — drag on the canvas to place an object.
    Squares keep equal sides; circles are placed centre-first with a draggable radius.
 5. **Select tool (V)** — click an object to select it, drag to move it, drag the corner
-   handle to resize (circle: the handle on its edge). `Delete` removes the selection.
+   handle to **scale** it (circle: the handle on its edge sets the radius), drag the round
+   handle above it to **rotate** (hold `Shift` to snap to 15° steps). `Delete` removes the
+   selection. Hovering or selecting an object shows an **in-context toolbar** next to it
+   with rotate ±15°, duplicate and delete buttons.
+6. **Dimensions** — the *Dimensions* checkbox in the toolbar shows/hides measurements on
+   every garden edge and every object edge (circles show their diameter).
 6. **Object editor (side panel)** — set the label (drawn on the object), colour, and a
    free-text description. Hovering an object on the canvas shows its label and
    description in a tooltip.

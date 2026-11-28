@@ -121,6 +121,7 @@ function pointer(type, x, y, extra) {
 
   key('v');
   pointer('pointerdown', 160, 150); pointer('pointerup', 160, 150);
+  byId.ctxRotRight.click();
 
   byId.objLabel.value = 'Bench';
   fire(byId.objLabel, 'input', { target: byId.objLabel });
@@ -148,6 +149,8 @@ function pointer(type, x, y, extra) {
   assert.strictEqual(rectObj.label, 'Bench', 'label edit persisted');
   assert.strictEqual(rectObj.description, 'Seats four people', 'description edit persisted');
   assert.strictEqual(rectObj.color, '#aa3344', 'colour edit persisted');
+  assert.strictEqual(rectObj.rotation, 15, 'in-context rotate button set rotation to 15 degrees');
+  assert.strictEqual(saved.showDimensions, true, 'dimensions toggle persisted');
   const sq = saved.objects.find(o => o.type === 'square');
   assert.strictEqual(sq.w, sq.h, 'square saved with equal sides');
   const ci = saved.objects.find(o => o.type === 'circle');

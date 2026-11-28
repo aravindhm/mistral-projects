@@ -176,3 +176,30 @@ body {
 
 #tooltip strong { display: block; margin-bottom: 2px; }
 #tooltip p { margin: 0; white-space: pre-wrap; color: #444; }
+
+#contextBar {
+  position: absolute;
+  z-index: 9;
+  display: flex;
+  gap: 3px;
+  background: #fff;
+  border: 1px solid #c8cec6;
+  border-radius: 6px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
+  padding: 3px;
+}
+
+#contextBar[hidden] { display: none; }
+
+#contextBar button {
+  font: inherit;
+  font-size: 12px;
+  padding: 3px 8px;
+  border: 1px solid #c8cec6;
+  border-radius: 4px;
+  background: #fff;
+  color: #222;
+  cursor: pointer;
+}
+
+#contextBar button:hover { background: #eef3ec; }

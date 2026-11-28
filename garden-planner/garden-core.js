@@ -98,6 +98,7 @@
       color: '#c98f4e',
       label: '',
       description: '',
+      rotation: 0,
       x: 0,
       y: 0,
     };
@@ -113,13 +114,88 @@
     return obj;
   }
 
+  function objectCenter(o) {
+    if (o.type === 'circle') return { x: o.x, y: o.y };
+    return { x: o.x + o.w / 2, y: o.y + o.h / 2 };
+  }
+
+  function rotatePoint(p, center, deg) {
+    const rad = deg * Math.PI / 180;
+    const cos = Math.cos(rad);
+    const sin = Math.sin(rad);
+    const dx = p.x - center.x;
+    const dy = p.y - center.y;
+    return { x: center.x + dx * cos - dy * sin, y: center.y + dx * sin + dy * cos };
+  }
+
+  function toLocalCentered(o, p) {
+    const c = objectCenter(o);
+    const rad = -(o.rotation || 0) * Math.PI / 180;
+    const cos = Math.cos(rad);
+    const sin = Math.sin(rad);
+    const dx = p.x - c.x;
+    const dy = p.y - c.y;
+    return { x: dx * cos - dy * sin, y: dx * sin + dy * cos };
+  }
+
+  function toLocalTopLeft(o, p) {
+    const rad = -(o.rotation || 0) * Math.PI / 180;
+    const cos = Math.cos(rad);
+    const sin = Math.sin(rad);
+    const dx = p.x - o.x;
+    const dy = p.y - o.y;
+    return { x: dx * cos - dy * sin, y: dx * sin + dy * cos };
+  }
+
+  function objectCorners(o) {
+    const c = objectCenter(o);
+    if (o.type === 'circle') {
+      return [
+        { x: c.x - o.r, y: c.y - o.r },
+        { x: c.x + o.r, y: c.y - o.r },
+        { x: c.x + o.r, y: c.y + o.r },
+        { x: c.x - o.r, y: c.y + o.r },
+      ];
+    }
+    const hw = o.w / 2;
+    const hh = o.h / 2;
+    const local = [{ x: -hw, y: -hh }, { x: hw, y: -hh }, { x: hw, y: hh }, { x: -hw, y: hh }];
+    return local.map(function (p) { return rotatePoint({ x: c.x + p.x, y: c.y + p.y }, c, o.rotation || 0); });
+  }
+
+  function objectBounds(o) {
+    const cs = objectCorners(o);
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+    for (const c of cs) {
+      if (c.x < minX) minX = c.x;
+      if (c.y < minY) minY = c.y;
+      if (c.x > maxX) maxX = c.x;
+      if (c.y > maxY) maxY = c.y;
+    }
+    return { minX: minX, minY: minY, maxX: maxX, maxY: maxY };
+  }
+
+  function normAngle(deg) {
+    return ((deg % 360) + 360) % 360;
+  }
+
+  function snapAngle(deg, step) {
+    if (!(step > 0)) return normAngle(deg);
+    return normAngle(Math.round(deg / step) * step);
+  }
+
   function objectContains(obj, p) {
     if (obj.type === 'circle') {
-      const dx = p.x - obj.x;
-      const dy = p.y - obj.y;
+      const c = objectCenter(obj);
+      const dx = p.x - c.x;
+      const dy = p.y - c.y;
       return dx * dx + dy * dy <= obj.r * obj.r;
     }
-    return p.x >= obj.x && p.x <= obj.x + obj.w && p.y >= obj.y && p.y <= obj.y + obj.h;
+    const l = toLocalCentered(obj, p);
+    return Math.abs(l.x) <= obj.w / 2 && Math.abs(l.y) <= obj.h / 2;
   }
 
   function hitTest(objects, p) {
@@ -179,5 +255,13 @@
     rectFromDrag: rectFromDrag,
     formatLength: formatLength,
     snapToAxis: snapToAxis,
+    objectCenter: objectCenter,
+    rotatePoint: rotatePoint,
+    toLocalCentered: toLocalCentered,
+    toLocalTopLeft: toLocalTopLeft,
+    objectCorners: objectCorners,
+    objectBounds: objectBounds,
+    normAngle: normAngle,
+    snapAngle: snapAngle,
   };
 });

@@ -26,6 +26,8 @@
     objDesc: document.getElementById('objDesc'),
     geomRow: document.getElementById('geomRow'),
     zoomLabel: document.getElementById('zoomLabel'),
+    toggleDims: document.getElementById('toggleDims'),
+    contextBar: document.getElementById('contextBar'),
   };
 
   const state = {
@@ -44,6 +46,7 @@
     paint: 'grass',
     drag: null,
     spaceDown: false,
+    showDimensions: true,
     undoStack: [],
   };
 
@@ -112,7 +115,9 @@
     drawBackgroundGrid();
     drawGarden();
     drawObjects();
+    drawDimensions();
     drawPreview();
+    updateContextBar();
   }
 
   function drawBackgroundGrid() {
@@ -234,64 +239,158 @@
     }
   }
 
+  function withObjectFrame(o, fn) {
+    const c = GardenCore.objectCenter(o);
+    ctx.save();
+    ctx.translate(c.x, c.y);
+    ctx.rotate((o.rotation || 0) * Math.PI / 180);
+    fn();
+    ctx.restore();
+  }
+
   function objectPath(o) {
     ctx.beginPath();
     if (o.type === 'circle') {
-      ctx.arc(o.x, o.y, o.r, 0, Math.PI * 2);
+      ctx.arc(0, 0, o.r, 0, Math.PI * 2);
     } else {
-      ctx.rect(o.x, o.y, o.w, o.h);
+      ctx.rect(-o.w / 2, -o.h / 2, o.w, o.h);
     }
   }
 
   function drawObjects() {
     for (const o of state.objects) {
-      objectPath(o);
-      ctx.globalAlpha = 0.88;
-      ctx.fillStyle = o.color || '#c98f4e';
-      ctx.fill();
-      ctx.globalAlpha = 1;
-      ctx.lineWidth = 0.5;
-      ctx.setLineDash([]);
-      if (o.id === state.selectedId) {
-        ctx.strokeStyle = '#1a73e8';
-        ctx.lineWidth = 0.7;
-        ctx.setLineDash([1.4, 1]);
-      } else if (o.id === state.hoverId) {
-        ctx.strokeStyle = 'rgba(0,0,0,0.9)';
-        ctx.lineWidth = 0.8;
-      } else {
-        ctx.strokeStyle = 'rgba(0,0,0,0.55)';
-      }
-      ctx.stroke();
-      ctx.setLineDash([]);
-      if (o.label) {
-        const cx = o.type === 'circle' ? o.x : o.x + o.w / 2;
-        const cy = o.type === 'circle' ? o.y : o.y + o.h / 2;
-        ctx.font = '3px system-ui, sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.lineWidth = 0.7;
-        ctx.strokeStyle = 'rgba(255,255,255,0.85)';
-        ctx.strokeText(o.label, cx, cy);
-        ctx.fillStyle = 'rgba(20,20,20,0.85)';
-        ctx.fillText(o.label, cx, cy);
-      }
+      withObjectFrame(o, function () {
+        objectPath(o);
+        ctx.globalAlpha = 0.88;
+        ctx.fillStyle = o.color || '#c98f4e';
+        ctx.fill();
+        ctx.globalAlpha = 1;
+        ctx.lineWidth = 0.5;
+        ctx.setLineDash([]);
+        if (o.id === state.selectedId) {
+          ctx.strokeStyle = '#1a73e8';
+          ctx.lineWidth = 0.7;
+          ctx.setLineDash([1.4, 1]);
+        } else if (o.id === state.hoverId) {
+          ctx.strokeStyle = 'rgba(0,0,0,0.9)';
+          ctx.lineWidth = 0.8;
+        } else {
+          ctx.strokeStyle = 'rgba(0,0,0,0.55)';
+        }
+        ctx.stroke();
+        ctx.setLineDash([]);
+        if (o.label) {
+          ctx.font = '3px system-ui, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.lineWidth = 0.7;
+          ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+          ctx.strokeText(o.label, 0, 0);
+          ctx.fillStyle = 'rgba(20,20,20,0.85)';
+          ctx.fillText(o.label, 0, 0);
+        }
+      });
     }
     const sel = selectedObject();
     if (sel && state.mode === 'select') drawHandles(sel);
   }
 
+  function drawDimensions() {
+    if (!state.showDimensions) return;
+    ctx.font = '2.2px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.lineWidth = 0.55;
+    const labelEdge = function (a, b) {
+      const len = Math.hypot(b.x - a.x, b.y - a.y);
+      if (len < 0.01) return;
+      const mx = (a.x + b.x) / 2;
+      const my = (a.y + b.y) / 2;
+      const nx = -(b.y - a.y) / len;
+      const ny = (b.x - a.x) / len;
+      const x = mx + nx * 1.6;
+      const y = my + ny * 1.6;
+      const text = GardenCore.formatLength(len);
+      ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+      ctx.strokeText(text, x, y);
+      ctx.fillStyle = '#37474f';
+      ctx.fillText(text, x, y);
+    };
+    if (gardenDefined()) {
+      for (let i = 0; i < state.polygon.length; i++) {
+        labelEdge(state.polygon[i], state.polygon[(i + 1) % state.polygon.length]);
+      }
+    } else if (state.drawingGarden && state.polygon.length >= 2) {
+      for (let i = 0; i < state.polygon.length - 1; i++) {
+        labelEdge(state.polygon[i], state.polygon[i + 1]);
+      }
+    }
+    for (const o of state.objects) {
+      withObjectFrame(o, function () {
+        if (o.type === 'circle') {
+          ctx.beginPath();
+          ctx.moveTo(-o.r, 0);
+          ctx.lineTo(o.r, 0);
+          ctx.strokeStyle = 'rgba(55,71,79,0.35)';
+          ctx.lineWidth = 0.15;
+          ctx.setLineDash([0.8, 0.6]);
+          ctx.stroke();
+          ctx.setLineDash([]);
+          const text = '⌀ ' + GardenCore.formatLength(2 * o.r);
+          ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+          ctx.lineWidth = 0.55;
+          ctx.strokeText(text, 0, -1.6);
+          ctx.fillStyle = '#37474f';
+          ctx.fillText(text, 0, -1.6);
+        } else {
+          labelEdge({ x: -o.w / 2, y: -o.h / 2 }, { x: o.w / 2, y: -o.h / 2 });
+          labelEdge({ x: o.w / 2, y: -o.h / 2 }, { x: o.w / 2, y: o.h / 2 });
+          labelEdge({ x: o.w / 2, y: o.h / 2 }, { x: -o.w / 2, y: o.h / 2 });
+          labelEdge({ x: -o.w / 2, y: o.h / 2 }, { x: -o.w / 2, y: -o.h / 2 });
+        }
+      });
+    }
+  }
+
   function handlePos(o) {
-    if (o.type === 'circle') return { x: o.x + o.r, y: o.y };
-    return { x: o.x + o.w, y: o.y + o.h };
+    const c = GardenCore.objectCenter(o);
+    const local = o.type === 'circle' ? { x: o.r, y: 0 } : { x: o.w / 2, y: o.h / 2 };
+    return GardenCore.rotatePoint({ x: c.x + local.x, y: c.y + local.y }, c, o.rotation || 0);
+  }
+
+  function rotateHandleReach(o) {
+    return (o.type === 'circle' ? o.r : Math.max(o.w, o.h) / 2) + 8;
+  }
+
+  function rotateHandlePos(o) {
+    const c = GardenCore.objectCenter(o);
+    return GardenCore.rotatePoint({ x: c.x, y: c.y - rotateHandleReach(o) }, c, o.rotation || 0);
   }
 
   function drawHandles(o) {
-    const hp = handlePos(o);
     const s = viewScale();
     const r = Math.max(0.9, 8 / s);
+    const hp = handlePos(o);
     ctx.beginPath();
     ctx.rect(hp.x - r, hp.y - r, r * 2, r * 2);
+    ctx.fillStyle = '#fff';
+    ctx.fill();
+    ctx.strokeStyle = '#1a73e8';
+    ctx.lineWidth = 0.35;
+    ctx.stroke();
+    const c = GardenCore.objectCenter(o);
+    const reach = rotateHandleReach(o);
+    const edgeMid = GardenCore.rotatePoint({ x: c.x, y: c.y - (reach - 8) }, c, o.rotation || 0);
+    const rp = rotateHandlePos(o);
+    ctx.beginPath();
+    ctx.moveTo(edgeMid.x, edgeMid.y);
+    ctx.lineTo(rp.x, rp.y);
+    ctx.strokeStyle = '#1a73e8';
+    ctx.lineWidth = 0.25;
+    ctx.setLineDash([]);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(rp.x, rp.y, r, 0, Math.PI * 2);
     ctx.fillStyle = '#fff';
     ctx.fill();
     ctx.strokeStyle = '#1a73e8';
@@ -301,12 +400,47 @@
 
   function handleHit(e) {
     const sel = selectedObject();
-    if (!sel || state.mode !== 'select') return false;
+    if (!sel || state.mode !== 'select') return null;
     const rect = canvas.getBoundingClientRect();
     const sx = e.clientX - rect.left;
     const sy = e.clientY - rect.top;
+    const rp = screenOf(rotateHandlePos(sel));
+    if (Math.hypot(rp.x - sx, rp.y - sy) <= 9) return 'rotate';
     const hp = screenOf(handlePos(sel));
-    return Math.hypot(hp.x - sx, hp.y - sy) <= 9;
+    if (Math.hypot(hp.x - sx, hp.y - sy) <= 9) return 'scale';
+    return null;
+  }
+
+  function contextTarget() {
+    if (state.mode !== 'select') return null;
+    return selectedObject() || state.objects.find(function (o) { return o.id === state.hoverId; }) || null;
+  }
+
+  function updateContextBar() {
+    const o = contextTarget();
+    if (!o) {
+      ui.contextBar.hidden = true;
+      return;
+    }
+    const b = GardenCore.objectBounds(o);
+    const tc = screenOf({ x: (b.minX + b.maxX) / 2, y: b.minY });
+    ui.contextBar.hidden = false;
+    const bw = ui.contextBar.offsetWidth || 170;
+    const left = GardenCore.clamp(tc.x - bw / 2, 4, Math.max(4, cssW - bw - 4));
+    let top = tc.y - 36;
+    if (top < 4) top = tc.y + 14;
+    ui.contextBar.style.left = left + 'px';
+    ui.contextBar.style.top = top + 'px';
+  }
+
+  function contextAction(fn) {
+    const o = contextTarget();
+    if (!o) return;
+    pushUndo();
+    fn(o);
+    refreshPanel();
+    saveSoon();
+    draw();
   }
 
   function drawPreview() {
@@ -322,14 +456,16 @@
       if (rr.w < MIN_SIZE || rr.h < MIN_SIZE) return;
       o = Object.assign({ type: d.type }, rr);
     }
-    objectPath(o);
-    ctx.fillStyle = 'rgba(26,115,232,0.18)';
-    ctx.fill();
-    ctx.strokeStyle = '#1a73e8';
-    ctx.lineWidth = 0.5;
-    ctx.setLineDash([1.4, 1]);
-    ctx.stroke();
-    ctx.setLineDash([]);
+    withObjectFrame(o, function () {
+      objectPath(o);
+      ctx.fillStyle = 'rgba(26,115,232,0.18)';
+      ctx.fill();
+      ctx.strokeStyle = '#1a73e8';
+      ctx.lineWidth = 0.5;
+      ctx.setLineDash([1.4, 1]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    });
   }
 
   function snapForGarden(w, shift) {
@@ -394,7 +530,7 @@
     state.tiles.set(GardenCore.cellKey(cell.col, cell.row), state.paint);
   }
 
-  function dragMove(w) {
+  function dragMove(w, e) {
     const d = state.drag;
     if (d.kind === 'pan') {
       state.view.ox = d.ox + (w.sx - d.sx);
@@ -406,19 +542,34 @@
     const o = state.objects.find(function (obj) { return obj.id === d.id; });
     if (!o) return;
     if (d.kind === 'move') {
-      o.x = w.x - d.dx;
-      o.y = w.y - d.dy;
+      const nc = { x: w.x - d.dx, y: w.y - d.dy };
+      if (o.type === 'circle') {
+        o.x = nc.x;
+        o.y = nc.y;
+      } else {
+        o.x = nc.x - o.w / 2;
+        o.y = nc.y - o.h / 2;
+      }
     } else if (d.kind === 'resize') {
       if (o.type === 'circle') {
-        o.r = Math.max(MIN_SIZE, Math.hypot(w.x - o.x, w.y - o.y));
-      } else if (o.type === 'square') {
-        const side = Math.max(MIN_SIZE, w.x - o.x, w.y - o.y);
-        o.w = side;
-        o.h = side;
+        const c = GardenCore.objectCenter(o);
+        o.r = Math.max(MIN_SIZE, Math.hypot(w.x - c.x, w.y - c.y));
       } else {
-        o.w = Math.max(MIN_SIZE, w.x - o.x);
-        o.h = Math.max(MIN_SIZE, w.y - o.y);
+        const l = GardenCore.toLocalTopLeft(o, w);
+        if (o.type === 'square') {
+          const side = Math.max(MIN_SIZE, l.x, l.y);
+          o.w = side;
+          o.h = side;
+        } else {
+          o.w = Math.max(MIN_SIZE, l.x);
+          o.h = Math.max(MIN_SIZE, l.y);
+        }
       }
+    } else if (d.kind === 'rotate') {
+      const c = GardenCore.objectCenter(o);
+      let ang = Math.atan2(w.y - c.y, w.x - c.x) * 180 / Math.PI + 90;
+      if (e && e.shiftKey) ang = GardenCore.snapAngle(ang, 15);
+      o.rotation = GardenCore.normAngle(ang);
     }
   }
 
@@ -479,7 +630,9 @@
         canvas.style.cursor = 'crosshair';
         break;
       default:
-        if (handleHit(e)) canvas.style.cursor = 'nwse-resize';
+        const h = handleHit(e);
+        if (h === 'rotate') canvas.style.cursor = 'grab';
+        else if (h) canvas.style.cursor = 'nwse-resize';
         else if (state.hoverId) canvas.style.cursor = 'move';
         else canvas.style.cursor = 'default';
     }
@@ -512,16 +665,18 @@
       state.drag = { kind: 'place', type: state.mode, x1: w.x, y1: w.y, cur: w };
       return;
     }
-    if (handleHit(e)) {
+    const h = handleHit(e);
+    if (h) {
       pushUndo();
-      state.drag = { kind: 'resize', id: state.selectedId };
+      state.drag = { kind: h === 'rotate' ? 'rotate' : 'resize', id: state.selectedId };
       return;
     }
     const hit = GardenCore.hitTest(state.objects, w);
     if (hit) {
       select(hit.id);
       pushUndo();
-      state.drag = { kind: 'move', id: hit.id, dx: w.x - hit.x, dy: w.y - hit.y };
+      const c = GardenCore.objectCenter(hit);
+      state.drag = { kind: 'move', id: hit.id, dx: w.x - c.x, dy: w.y - c.y };
     } else {
       select(null);
     }
@@ -533,7 +688,7 @@
     if (state.snapPreview) w = GardenCore.snapToAxis(state.polygon[state.polygon.length - 1], w);
     state.gardenCursor = w;
     if (state.drag) {
-      dragMove(w);
+      dragMove(w, e);
     } else {
       updateHover(w, e);
     }
@@ -547,7 +702,7 @@
     const d = state.drag;
     state.drag = null;
     if (d.kind === 'place') commitPlace(d, w);
-    if (d.kind === 'paint' || d.kind === 'move' || d.kind === 'resize') saveSoon();
+    if (d.kind === 'paint' || d.kind === 'move' || d.kind === 'resize' || d.kind === 'rotate') saveSoon();
     refreshPanel();
     draw();
   });
@@ -642,6 +797,7 @@
       tiles: Array.from(state.tiles.entries()),
       objects: state.objects,
       view: state.view,
+      showDimensions: state.showDimensions,
     };
   }
 
@@ -701,6 +857,10 @@
     }
     if (data.view && isFinite(data.view.zoom)) {
       state.view = { zoom: GardenCore.clamp(data.view.zoom, 0.2, 8), ox: +data.view.ox || 0, oy: +data.view.oy || 0 };
+    }
+    if (typeof data.showDimensions === 'boolean') {
+      state.showDimensions = data.showDimensions;
+      ui.toggleDims.checked = data.showDimensions;
     }
     state.selectedId = null;
     state.undoStack = [];
@@ -949,6 +1109,31 @@
   $('btnPng').addEventListener('click', function () {
     canvas.toBlob(function (blob) { if (blob) download('garden-plan.png', blob); }, 'image/png');
   });
+  $('toggleDims').addEventListener('change', function () {
+    state.showDimensions = $('toggleDims').checked;
+    saveSoon();
+    draw();
+  });
+  $('ctxRotLeft').addEventListener('click', function () {
+    contextAction(function (o) { o.rotation = GardenCore.normAngle((o.rotation || 0) - 15); });
+  });
+  $('ctxRotRight').addEventListener('click', function () {
+    contextAction(function (o) { o.rotation = GardenCore.normAngle((o.rotation || 0) + 15); });
+  });
+  $('ctxDuplicate').addEventListener('click', function () {
+    const o = contextTarget();
+    if (!o) return;
+    pushUndo();
+    const p = Object.assign({}, o);
+    delete p.id;
+    p.x = (p.x || 0) + 5;
+    p.y = (p.y || 0) + 5;
+    const copy = GardenCore.makeObject(o.type, p);
+    state.objects.push(copy);
+    select(copy.id);
+    saveSoon();
+  });
+  $('ctxDelete').addEventListener('click', deleteSelected);
 
   window.addEventListener('resize', resize);
   loadSaved();
